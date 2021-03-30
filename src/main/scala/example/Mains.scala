@@ -1,21 +1,34 @@
 package example
 
-import scala.util.matching.Regex
+import example.ImplicitTest.{intMonoid, stringMonoid, sum}
 
-object Mains extends App {
+abstract class Monoid[A] {
+    def add(x: A, y: A): A
 
-    val keyValPattern: Regex = "([0-9a-zA-Z- ]+): ([0-9a-zA-Z-#()/. ]+)".r
+    def unit: A
+}
 
-    val input: String =
-        """background-color: #A03300;
-          |background-image: url(img/header100.png);
-          |background-position: top center;
-          |background-repeat: repeat-x;
-          |background-size: 2160px 108px;
-          |margin: 0;
-          |height: 108px;
-          |width: 100%;""".stripMargin
+object ImplicitTest {
+    implicit val stringMonoid: Monoid[String] = new Monoid[String] {
+        def add(x: String, y: String): String = x concat y
 
-    for (patternMatch <- keyValPattern.findAllMatchIn(input))
-        println(s"key: ${patternMatch.group(1)} value: ${patternMatch.group(2)}")
+        def unit: String = ""
+    }
+
+    implicit val intMonoid: Monoid[Int] = new Monoid[Int] {
+        def add(x: Int, y: Int): Int = x + y
+
+        def unit: Int = 0
+    }
+
+    def sum[A](xs: List[A])(implicit m: Monoid[A]): A =
+        if (xs.isEmpty) m.unit
+        else m.add(xs.head, sum(xs.tail))
+
+    def fac(n: Int) = if (n == 0) 1 else n * fac(n - 1)
+}
+
+object Main extends App {
+    println(sum(List(1, 2, 3))) // uses IntMonoid implicitly
+    println(sum(List("a", "b", "c"))) // uses StringMonoid implicitly
 }
